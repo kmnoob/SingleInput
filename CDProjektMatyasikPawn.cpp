@@ -15,22 +15,14 @@
 ACDProjektMatyasikPawn::ACDProjektMatyasikPawn(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
 	AutoPossessPlayer = EAutoReceiveInput::Player0;
+	int32 tableinit[] = { 0,1,0,1,1};
+	TargetMorseVector.Append(tableinit, ARRAY_COUNT(tableinit));
 }
 
 void ACDProjektMatyasikPawn::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
-
-	if (APlayerController* PC = Cast<APlayerController>(GetController()))
-	{
-		{
-			FVector Start, Dir, End;
-			PC->DeprojectMousePositionToWorld(Start, Dir);
-			End = Start + (Dir * 8000.0f);
-			TraceForBlock(Start, End, false);
-		}
-	}
 }
 
 void ACDProjektMatyasikPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -52,49 +44,34 @@ void ACDProjektMatyasikPawn::CalcCamera(float DeltaTime, struct FMinimalViewInfo
 
 void ACDProjektMatyasikPawn::TriggerInput()
 {
-	if (CurrentBlockFocus)
-	{
-		CurrentBlockFocus->HandleClicked();
 		GetWorldTimerManager().SetTimer(InputTimer, 5.0f, false);
-	}
+
 }
 
 void ACDProjektMatyasikPawn::TriggerRelease()
 {
+	int NewInput = ConvertTimerToMorse(GetInputTime());
+	
+	PlayerMorseVector.Add(NewInput);
+	///////////
+	if (PlayerMorseVector.Num() < PlayerMorseVector.Num()) {
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("Something went wrong - PlayerMorseVector.Num() < PlayerMorseVector.Num()")));
+		PlayerMorseVector.Empty();
+	}
+	//////////////////
+
+	if (PlayerMorseVector.Last() == TargetMorseVector[PlayerMorseVector.Num() - 1]) {
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("Some variable values: x: %d"), NewInput));
+	}
+	else { 
+		PlayerMorseVector.Empty();
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("WRROONG - EMPTIED")));
+	}
+
 	ClearTimer();
 }
 
-void ACDProjektMatyasikPawn::TraceForBlock(const FVector& Start, const FVector& End, bool bDrawDebugHelpers)
-{
-	FHitResult HitResult;
-	GetWorld()->LineTraceSingleByChannel(HitResult, Start, End, ECC_Visibility);
-	if (bDrawDebugHelpers)
-	{
-		DrawDebugLine(GetWorld(), Start, HitResult.Location, FColor::Red);
-		DrawDebugSolidBox(GetWorld(), HitResult.Location, FVector(20.0f), FColor::Red);
-	}
-	if (HitResult.Actor.IsValid())
-	{
-		ACDProjektMatyasikBlock* HitBlock = Cast<ACDProjektMatyasikBlock>(HitResult.Actor.Get());
-		if (CurrentBlockFocus != HitBlock)
-		{
-			if (CurrentBlockFocus)
-			{
-				CurrentBlockFocus->Highlight(false);
-			}
-			if (HitBlock)
-			{
-				HitBlock->Highlight(true);
-			}
-			CurrentBlockFocus = HitBlock;
-		}
-	}
-	else if (CurrentBlockFocus)
-	{
-		CurrentBlockFocus->Highlight(false);
-		CurrentBlockFocus = nullptr;
-	}
-}
+
 
 float ACDProjektMatyasikPawn::GetInputTime()
 {
@@ -104,7 +81,16 @@ float ACDProjektMatyasikPawn::GetInputTime()
 
 void ACDProjektMatyasikPawn::ClearTimer()
 {
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("Some variable values: x: %f"), GetInputTime()));
+	
 	GetWorldTimerManager().ClearTimer(InputTimer);
 	
+}
+
+int ACDProjektMatyasikPawn::ConvertTimerToMorse(float interval)
+{
+	float threshold = 0.6f;
+
+	if (interval == -1.0f) return 2;	
+	if (interval<threshold)  return 0;
+	else return 1;
 }

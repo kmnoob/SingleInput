@@ -25,12 +25,12 @@ protected:
 
 	void TriggerInput();
 	void TriggerRelease();
-	void TraceForBlock(const FVector& Start, const FVector& End, bool bDrawDebugHelpers);
+	int ConvertTimerToMorse(float interval);
 	FTimerHandle InputTimer;
 	float GetInputTime();
 	void ClearTimer();
+	TArray<int32> PlayerMorseVector;
+	TArray<int32> TargetMorseVector;
 	
 
-	UPROPERTY(EditInstanceOnly, BlueprintReadWrite)
-	class ACDProjektMatyasikBlock* CurrentBlockFocus;
 };
